@@ -1,0 +1,48 @@
+
+name: Message Discord chaque semaine
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 16 * * 1"
+
+jobs:
+  envoyer-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Envoyer le message Discord
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+          MESSAGE: "Salut tout le monde ! Petit message hebdomadaire 😊"
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+          import urllib.error
+
+          token = os.environ["DISCORD_TOKEN"]
+          channel_id = os.environ["CHANNEL_ID"]
+          message = os.environ["MESSAGE"]
+
+          url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
+          data = json.dumps({"content": message}).encode("utf-8")
+          request = urllib.request.Request(
+              url,
+              data=data,
+              headers={
+                  "Authorization": f"Bot {token}",
+                  "Content-Type": "application/json",
+                  "User-Agent": "DiscordBot (weekly-message, 1.0)"
+              },
+              method="POST"
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  print("Message envoyé !", response.status)
+          except urllib.error.HTTPError as error:
+              print("Erreur Discord :", error.code, error.read().decode())
+              raise
+          PY
